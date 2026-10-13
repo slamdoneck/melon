@@ -13,6 +13,18 @@ for name, value in (("messages", []), ("history", []), ("sprites", {})):
         st.session_state[name] = value
 
 with st.sidebar:
+    st.header("Подключение Gemini")
+    entered_key = st.text_input("API-ключ Gemini", type="password", key="gemini_api_key",
+                               placeholder="Вставь ключ из Google AI Studio")
+    st.caption("Ключ хранится только в текущей сессии и не сохраняется в файл.")
+    st.link_button("Получить API-ключ", "https://aistudio.google.com/apikey")
+    api_key = entered_key.strip() or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if api_key:
+        st.caption("Ключ задан. Доступ проверяется при отправке сообщения.")
+    def clear_key():
+        st.session_state.gemini_api_key = ""
+    st.button("Удалить введённый ключ", on_click=clear_key, disabled=not entered_key)
+    st.divider()
     st.header("Твои спрайты")
     uploads = st.file_uploader("Загрузить изображения", type=["png", "jpg", "jpeg", "webp"],
                                accept_multiple_files=True, max_upload_size=10)
@@ -46,9 +58,8 @@ with st.sidebar:
         st.session_state.history = []
         st.rerun()
 
-api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 if not api_key:
-    st.info("Добавь GEMINI_API_KEY в секреты среды и перезапусти приложение, чтобы отправлять запросы.")
+    st.info("Вставь API-ключ Gemini в поле слева, затем выбери спрайт и напиши запрос.")
 
 
 def show_message(message, index):
@@ -87,7 +98,7 @@ if prompt:
     except errors.APIError as exc:
         hints = {
             400: "Проверь модель и запрос: модель должна поддерживать ответы TEXT и IMAGE.",
-            401: "Проверь ключ Gemini в секретах среды.",
+            401: "Проверь API-ключ Gemini в поле слева.",
             403: "Проверь доступ ключа к Gemini API и выбранной модели.",
             404: "Модель недоступна. Выбери доступную модель с генерацией изображений.",
             429: "Исчерпана квота Gemini. Проверь лимиты и оплату или повтори позже.",

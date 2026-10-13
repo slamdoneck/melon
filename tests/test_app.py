@@ -67,7 +67,22 @@ class InterfaceTests(TestCase):
         app = AppTest.from_file(APP_PATH).run()
         self.assertFalse(app.exception)
         self.assertTrue(app.chat_input[0].disabled)
-        self.assertIn("GEMINI_API_KEY", app.info[0].value)
+        self.assertIn("API-ключ Gemini", app.info[0].value)
+
+    @mock.patch.dict("os.environ", {}, clear=True)
+    def test_entered_key_used_and_can_be_removed(self):
+        with mock.patch("gemini_chat.send_turn", return_value=(
+                [{"kind": "text", "text": "Привет"}], [])) as send:
+            app = AppTest.from_file(APP_PATH).run()
+            self.assertEqual(app.text_input[0].proto.type, 1)  # PASSWORD
+            app.text_input[0].set_value(" test-ui-key ").run()
+            self.assertFalse(app.chat_input[0].disabled)
+            app.chat_input[0].set_value("Привет").run()
+            self.assertFalse(app.exception)
+            self.assertEqual(send.call_args.args[0], "test-ui-key")
+            app.button[0].click().run()
+            self.assertEqual(app.text_input[0].value, "")
+            self.assertTrue(app.chat_input[0].disabled)
 
     @mock.patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"})
     def test_sprite_chat_download_and_reset(self):
@@ -84,5 +99,5 @@ class InterfaceTests(TestCase):
             self.assertEqual(len(app.session_state["messages"]), 2)
             self.assertEqual(send.call_args.args[-1], sprite_bytes())
             self.assertEqual(len(app.get("download_button")), 1)
-            app.button[0].click().run()
+            app.button[1].click().run()
             self.assertEqual(app.session_state["messages"], [])
